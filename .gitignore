@@ -1,0 +1,23 @@
+# Java / Spring Boot
+backend/target/
+*.class
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+
+# Environment files
+.env
+*.env
+backend/src/main/resources/application.properties
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
