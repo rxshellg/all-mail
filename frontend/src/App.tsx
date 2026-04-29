@@ -8,6 +8,16 @@ type CurrentUser = {
   pictureUrl: string;
 };
 
+type GmailMessage = {
+  id: string;
+  threadId: string;
+  from: string;
+  subject: string;
+  snippet: string;
+  receivedAt: string;
+  unread: boolean;
+};
+
 function Home() {
   const handleLogin = () => {
     window.location.href = "http://localhost:8080/oauth2/authorization/google";
@@ -29,11 +39,29 @@ function Home() {
 }
 
 function Dashboard() {
-  const [user, setUser] = useCurrentUser();
+  const [user] = useCurrentUser();
+  const [messages, setMessages] = useState<GmailMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
 
   const handleLogout = () => {
     window.location.href = "http://localhost:8080/logout";
   };
+
+  useEffect(() => {
+    fetch("http://localhost:8080/api/gmail/messages", {
+      credentials: "include",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Could not load Gmail messages");
+        }
+
+        return response.json();
+      })
+      .then((data) => setMessages(data))
+      .catch((error) => console.error(error))
+      .finally(() => setMessagesLoading(false));
+  }, []);
 
   if (!user) {
     return (
@@ -66,6 +94,32 @@ function Dashboard() {
         <p>{user.email}</p>
 
         <button onClick={handleLogout}>Logout</button>
+      </section>
+      <section className="messages-card">
+        <h2>Inbox</h2>
+
+        {messagesLoading ? (
+          <p>Loading messages...</p>
+        ) : messages.length === 0 ? (
+          <p>No messages found.</p>
+        ) : (
+          <ul className="message-list">
+            {messages.map((message) => (
+              <li
+                key={message.id}
+                className={message.unread ? "message unread" : "message"}
+              >
+                <div>
+                  <strong>{message.from}</strong>
+                  <p>{message.subject || "(No subject)"}</p>
+                  <span>{message.snippet}</span>
+                </div>
+
+                <small>{message.receivedAt}</small>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );
