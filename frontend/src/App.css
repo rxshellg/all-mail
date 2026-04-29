@@ -182,3 +182,12 @@
     border-right-color: var(--border);
   }
 }
+
+.avatar-placeholder {
+  display: grid;
+  place-items: center;
+  background: #1f1f1f;
+  color: white;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
