@@ -1,10 +1,15 @@
 package com.rxshellg.allmail.service;
 
+import com.rxshellg.allmail.dto.GmailAccountErrorDto;
+import com.rxshellg.allmail.dto.GmailInboxResponseDto;
 import com.rxshellg.allmail.dto.GmailMessageDto;
 import com.rxshellg.allmail.model.ConnectedAccount;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +21,7 @@ import java.util.Map;
 @Service
 public class GmailService {
 
+    private static final Logger logger = LoggerFactory.getLogger(GmailService.class);
     private final RestClient restClient;
     private final GoogleTokenService googleTokenService;
 
@@ -29,18 +35,29 @@ public class GmailService {
     /**
      * Fetches inbox messages for every active connected Google account.
      */
-    public List<GmailMessageDto> getInboxMessages(List<ConnectedAccount> connectedAccounts) {
+    public GmailInboxResponseDto getInboxMessages(List<ConnectedAccount> connectedAccounts) {
         List<GmailMessageDto> allMessages = new ArrayList<>();
+        List<GmailAccountErrorDto> errors = new ArrayList<>();
 
         for (ConnectedAccount account : connectedAccounts) {
             if (!"GOOGLE".equalsIgnoreCase(account.getProvider())) {
                 continue;
             }
 
-            allMessages.addAll(getInboxMessagesForAccount(account));
+            try {
+                allMessages.addAll(getInboxMessagesForAccount(account));
+            } catch (Exception ex) {
+                logger.warn(
+                        "Could not load Gmail messages for connected account {}",
+                        account.getEmailAddress(),
+                        ex
+                );
+
+                errors.add(buildAccountError(account, ex));
+            }
         }
 
-        return allMessages;
+        return new GmailInboxResponseDto(allMessages, errors);
     }
 
     /**
@@ -113,6 +130,41 @@ public class GmailService {
                 receivedAt,
                 unread
         );
+    }
+
+    /**
+     * Converts account-specific Gmail/token failures into safe frontend messages
+     */
+    private GmailAccountErrorDto buildAccountError(ConnectedAccount account, Exception ex) {
+        boolean reconnectRequired = isReconnectRequired(ex);
+
+        String message = reconnectRequired
+                ? "This account needs to be reconnected."
+                : "Messages could not be loaded for this account.";
+
+        return new GmailAccountErrorDto(
+                account.getId(),
+                account.getEmailAddress(),
+                account.getProvider(),
+                message,
+                reconnectRequired
+        );
+    }
+
+    /**
+     * Detects failures that usually mean Google access was revoked or cannot be refreshed
+     */
+    private boolean isReconnectRequired(Exception ex) {
+        if (ex.getMessage() != null && ex.getMessage().contains("No refresh token available")) {
+            return true;
+        }
+
+        if (ex instanceof RestClientResponseException responseException) {
+            int statusCode = responseException.getStatusCode().value();
+            return statusCode == 400 || statusCode == 401 || statusCode == 403;
+        }
+
+        return false;
     }
 
     /**
