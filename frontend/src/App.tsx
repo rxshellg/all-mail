@@ -11,6 +11,9 @@ type CurrentUser = {
 type GmailMessage = {
   id: string;
   threadId: string;
+  accountId: number;
+  accountEmail: string;
+  accountDisplayName: string;
   from: string;
   subject: string;
   snippet: string;
@@ -112,6 +115,7 @@ function Dashboard() {
                 <div>
                   <strong>{message.from}</strong>
                   <p>{message.subject || "(No subject)"}</p>
+                  <small>{message.accountEmail}</small>
                   <span>{message.snippet}</span>
                 </div>
 
