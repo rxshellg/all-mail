@@ -61,7 +61,10 @@ function Dashboard() {
 
         return response.json();
       })
-      .then((data) => setMessages(data))
+      .then((data) => {
+        setMessages(data.messages);
+        console.log(data.errors);
+      })
       .catch((error) => console.error(error))
       .finally(() => setMessagesLoading(false));
   }, []);

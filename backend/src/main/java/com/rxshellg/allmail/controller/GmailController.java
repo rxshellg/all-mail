@@ -1,7 +1,7 @@
 package com.rxshellg.allmail.controller;
 
 import com.rxshellg.allmail.config.SessionKeys;
-import com.rxshellg.allmail.dto.GmailMessageDto;
+import com.rxshellg.allmail.dto.GmailInboxResponseDto;
 import com.rxshellg.allmail.model.AppUser;
 import com.rxshellg.allmail.model.ConnectedAccount;
 import com.rxshellg.allmail.repository.AppUserRepository;
@@ -34,7 +34,7 @@ public class GmailController {
     }
 
     @GetMapping("/api/gmail/messages")
-    public List<GmailMessageDto> getInboxMessages(HttpSession session) {
+    public GmailInboxResponseDto getInboxMessages(HttpSession session) {
         AppUser appUser = getCurrentAppUser(session);
         List<ConnectedAccount> connectedAccounts =
                 connectedAccountService.getActiveAccountsForUser(appUser);
