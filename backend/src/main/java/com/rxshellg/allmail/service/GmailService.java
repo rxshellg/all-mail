@@ -1,10 +1,8 @@
 package com.rxshellg.allmail.service;
 
 import com.rxshellg.allmail.dto.GmailMessageDto;
+import com.rxshellg.allmail.model.ConnectedAccount;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -13,54 +11,70 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Uses the logged-in user's Google access token to read Gmail inbox data.
+ * Reads Gmail messages from the Google accounts connected to an AllMail user
  */
 @Service
 public class GmailService {
 
-    private final OAuth2AuthorizedClientService authorizedClientService;
     private final RestClient restClient;
 
-    public GmailService(OAuth2AuthorizedClientService authorizedClientService) {
-        this.authorizedClientService = authorizedClientService;
+    public GmailService() {
         this.restClient = RestClient.builder()
                 .baseUrl("https://gmail.googleapis.com/gmail/v1")
                 .build();
     }
 
-    public List<GmailMessageDto> getInboxMessages(OAuth2AuthenticationToken authentication) {
-        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(
-                authentication.getAuthorizedClientRegistrationId(),
-                authentication.getName()
-        );
+    /**
+     * Fetches inbox messages for every active connected Google account.
+     */
+    public List<GmailMessageDto> getInboxMessages(List<ConnectedAccount> connectedAccounts) {
+        List<GmailMessageDto> allMessages = new ArrayList<>();
 
-        String accessToken = client.getAccessToken().getTokenValue();
+        for (ConnectedAccount account : connectedAccounts) {
+            if (!"GOOGLE".equalsIgnoreCase(account.getProvider())) {
+                continue;
+            }
 
+            allMessages.addAll(getInboxMessagesForAccount(account));
+        }
+
+        return allMessages;
+    }
+
+    /**
+     * Gets a small list of message IDs for one Gmail account, then loads metadata for each.
+     */
+    private List<GmailMessageDto> getInboxMessagesForAccount(ConnectedAccount account) {
         Map<String, Object> listResponse = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/users/me/messages")
                         .queryParam("maxResults", 10)
                         .queryParam("labelIds", "INBOX")
                         .build())
-                .header("Authorization", "Bearer " + accessToken)
+                .header("Authorization", "Bearer " + account.getAccessToken())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });
 
         List<Map<String, Object>> messages =
-                (List<Map<String, Object>>) listResponse.getOrDefault("messages", List.of());
+                listResponse == null
+                        ? List.of()
+                        : (List<Map<String, Object>>) listResponse.getOrDefault("messages", List.of());
 
-        List<GmailMessageDto> inboxMessages = new ArrayList<>();
+        List<GmailMessageDto> accountMessages = new ArrayList<>();
 
         for (Map<String, Object> message : messages) {
             String messageId = (String) message.get("id");
-            inboxMessages.add(getMessageDetails(messageId, accessToken));
+            accountMessages.add(getMessageDetails(messageId, account));
         }
 
-        return inboxMessages;
+        return accountMessages;
     }
 
-    private GmailMessageDto getMessageDetails(String messageId, String accessToken) {
+    /**
+     * Loads the sender, subject, date, snippet, and unread status for one Gmail message
+     */
+    private GmailMessageDto getMessageDetails(String messageId, ConnectedAccount account) {
         Map<String, Object> messageDetails = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/users/me/messages/{messageId}")
@@ -69,7 +83,7 @@ public class GmailService {
                         .queryParam("metadataHeaders", "Subject")
                         .queryParam("metadataHeaders", "Date")
                         .build(messageId))
-                .header("Authorization", "Bearer " + accessToken)
+                .header("Authorization", "Bearer " + account.getAccessToken())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {
                 });
@@ -86,6 +100,9 @@ public class GmailService {
         return new GmailMessageDto(
                 messageId,
                 threadId,
+                account.getId(),
+                account.getEmailAddress(),
+                account.getDisplayName(),
                 from,
                 subject,
                 snippet,
@@ -94,6 +111,9 @@ public class GmailService {
         );
     }
 
+    /**
+     * Finds a specific Gmail metadata header from the message payload
+     */
     private String getHeaderValue(Map<String, Object> messageDetails, String headerName) {
         Map<String, Object> payload = (Map<String, Object>) messageDetails.get("payload");
         List<Map<String, String>> headers =
