@@ -67,4 +67,8 @@ public class ConnectedAccountService {
     public java.util.List<ConnectedAccount> getActiveAccountsForUser(AppUser appUser) {
         return connectedAccountRepository.findByAppUserAndActiveTrue(appUser);
     }
+
+    public ConnectedAccount save(ConnectedAccount account) {
+        return connectedAccountRepository.save(account);
+    }
 }

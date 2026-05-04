@@ -17,8 +17,10 @@ import java.util.Map;
 public class GmailService {
 
     private final RestClient restClient;
+    private final GoogleTokenService googleTokenService;
 
-    public GmailService() {
+    public GmailService(GoogleTokenService googleTokenService) {
+        this.googleTokenService = googleTokenService;
         this.restClient = RestClient.builder()
                 .baseUrl("https://gmail.googleapis.com/gmail/v1")
                 .build();
@@ -45,6 +47,8 @@ public class GmailService {
      * Gets a small list of message IDs for one Gmail account, then loads metadata for each.
      */
     private List<GmailMessageDto> getInboxMessagesForAccount(ConnectedAccount account) {
+        account = googleTokenService.getAccountWithValidAccessToken(account);
+        
         Map<String, Object> listResponse = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/users/me/messages")
