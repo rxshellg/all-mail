@@ -1,0 +1,29 @@
+.overview {
+  min-height: calc(100vh - 56px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.metric-icon-blue {
+  color: #8fb7ff;
+}
+
+.metric-icon-green {
+  color: #9edcc0;
+}
+
+.metric-icon-yellow {
+  color: #ffd782;
+}
+
+.metric-icon-coral {
+  color: #ff9f9f;
+}
+
+.overview-panel {
+  background-color: #f0f4fe;
+}
+
+.bubble {
+  padding: 0.2em 0.5em 0.3em;
+}
