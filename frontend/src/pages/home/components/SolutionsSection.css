@@ -1,0 +1,27 @@
+.solutions {
+  min-height: calc(100vh - 56px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.solutions-panel {
+  background: #151927;
+}
+
+.solution-title-pill {
+  display: inline-block;
+  padding: 0 0.35em;
+  border: 1px solid rgba(143, 183, 255, 0.9);
+  border-radius: 999px;
+  color: #8fb7ff;
+  font-style: italic;
+}
+
+.solution-illustration {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  background: #eef4ff;
+  color: #4f73ff;
+  font-size: 3rem;
+}

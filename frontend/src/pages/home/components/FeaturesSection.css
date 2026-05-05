@@ -1,0 +1,38 @@
+.features {
+  min-height: calc(100vh - 56px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.feature-featured-card {
+  background: linear-gradient(135deg, #3f5cff 0%, #2f49d8 100%);
+}
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1.4rem;
+}
+
+.feature-icon-blue {
+  background-color: #e7efff;
+  color: #6a92ff;
+}
+
+.feature-icon-yellow {
+  background-color: #fff1cf;
+  color: #e7b545;
+}
+
+.feature-icon-purple {
+  background-color: #efe8ff;
+  color: #8a73e6;
+}
+
+.feature-icon-green {
+  background-color: #def5e8;
+  color: #61b982;
+}

@@ -1,0 +1,19 @@
+.hero {
+  min-height: calc(100vh - 56px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.hero-actions {
+  margin-bottom: 3rem;
+}
+
+.hero-point-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background-color: #e8f3ff;
+  color: #4b8fe8;
+}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
+import HomePage from "./pages/home/HomePage";
+import LoginPage from "./pages/login/LoginPage";
 import "./App.css";
 
 type CurrentUser = {
@@ -20,26 +22,6 @@ type GmailMessage = {
   receivedAt: string;
   unread: boolean;
 };
-
-function Home() {
-  const handleLogin = () => {
-    window.location.href = "http://localhost:8080/oauth2/authorization/google";
-  };
-
-  return (
-    <main className="page">
-      <section className="card">
-        <h1>AllMail</h1>
-        <p>
-          A centralized inbox dashboard for managing messages across multiple
-          email accounts.
-        </p>
-
-        <button onClick={handleLogin}>Login with Google</button>
-      </section>
-    </main>
-  );
-}
 
 function Dashboard() {
   const [user] = useCurrentUser();
@@ -161,7 +143,8 @@ function useCurrentUser(): [
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
   );

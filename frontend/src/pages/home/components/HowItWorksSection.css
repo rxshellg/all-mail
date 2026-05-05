@@ -1,0 +1,57 @@
+.how-it-works {
+  min-height: calc(100vh - 56px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.how-panel {
+  background: #f7f4ff;
+}
+
+.bubble {
+  padding: 0.2em 0.5em 0.3em;
+}
+
+.how-step-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f3ff;
+  color: #4f73ff;
+}
+
+.how-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.how-step-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.how-step-icon {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f3ff;
+  color: #4f73ff;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.how-step-item:not(:last-child) .how-step-icon::after {
+  content: "";
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  height: 20px;
+  border-left: 2px dashed #c7d7ff;
+}

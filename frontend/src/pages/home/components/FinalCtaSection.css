@@ -1,0 +1,22 @@
+.final-cta {
+  min-height: calc(100vh - 56px);
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.final-cta-card {
+  background: #ffd36e;
+}
+
+.final-cta-illustration {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.35);
+  color: #1f1f1f;
+  font-size: 4rem;
+}
+
+.final-access-card {
+  background: #f3f8ff;
+}
