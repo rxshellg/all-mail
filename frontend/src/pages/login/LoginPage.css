@@ -1,0 +1,96 @@
+.login-page {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 3rem 0;
+}
+
+.login-intro {
+  display: flex;
+  flex-direction: column;
+  background: #F4F7FE;
+}
+
+.login-logo-mark {
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--bs-primary);
+  color: white;
+  font-weight: 800;
+}
+
+.login-panel {
+  max-width: 440px;
+}
+
+.provider-button {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0 1.25rem;
+  border-radius: 16px;
+  color: #101426;
+  background: white;
+}
+
+.provider-button:not(:disabled):hover {
+  background: #f8faff;
+}
+
+.provider-button:disabled {
+  opacity: 0.72;
+}
+
+.provider-icon {
+  font-size: 1.55rem;
+}
+
+.google-icon {
+  color: #ea4335;
+}
+
+.microsoft-icon {
+  color: #00a4ef;
+}
+
+.apple-icon {
+  color: #111111;
+}
+
+.magic-icon {
+  color: var(--bs-primary);
+}
+
+.login-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #9aa1b5;
+  font-size: 0.9rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: #e4e8f2;
+}
+
+@media (max-width: 991px) {
+  .login-intro {
+    min-height: auto;
+  }
+
+  .login-intro-copy {
+    margin-top: 3rem;
+  }
+
+  .login-trust-card {
+    margin-top: 3rem;
+  }
+}
