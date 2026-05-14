@@ -1,0 +1,27 @@
+.message-detail,
+.message-empty {
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.message-empty {
+  display: grid;
+  place-items: center;
+  color: #8a94a8;
+  text-align: center;
+}
+
+.message-empty i {
+  font-size: 2rem;
+}
+
+.message-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #edf0f6;
+}
+
+.message-body {
+  padding-top: 1.5rem;
+  color: #4d5568;
+  line-height: 1.7;
+}

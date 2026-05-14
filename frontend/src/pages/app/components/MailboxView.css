@@ -1,0 +1,20 @@
+.mailbox-header {
+  max-width: 760px;
+}
+
+.mailbox-errors {
+  padding: 1rem;
+  background: #fff5e8;
+  color: #7a4a13;
+}
+
+.mailbox-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 42%) 1fr;
+  overflow: hidden;
+}
+
+.mailbox-list-panel {
+  min-width: 0;
+  border-right: 1px solid #edf0f6;
+}

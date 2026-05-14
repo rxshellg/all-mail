@@ -1,0 +1,36 @@
+.navbar-search {
+  width: min(420px, 35vw);
+}
+
+.navbar-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.navbar-user-placeholder {
+  display: inline-grid;
+  place-items: center;
+  background: var(--bs-primary);
+  color: white;
+  font-weight: 700;
+}
+
+.navbar-user-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 180px;
+  padding: 0.5rem;
+  z-index: 1030;
+}
+
+.navbar-logo-section {
+  width: 5%;
+}
+
+.navbar-logo-section img {
+  width: 100%;
+  height: auto;
+}

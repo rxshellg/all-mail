@@ -1,151 +1,18 @@
-import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import HomePage from "./pages/home/HomePage";
 import LoginPage from "./pages/login/LoginPage";
-import "./App.css";
-
-type CurrentUser = {
-  name: string;
-  email: string;
-  pictureUrl: string;
-};
-
-type GmailMessage = {
-  id: string;
-  threadId: string;
-  accountId: number;
-  accountEmail: string;
-  accountDisplayName: string;
-  from: string;
-  subject: string;
-  snippet: string;
-  receivedAt: string;
-  unread: boolean;
-};
-
-function Dashboard() {
-  const [user] = useCurrentUser();
-  const [messages, setMessages] = useState<GmailMessage[]>([]);
-  const [messagesLoading, setMessagesLoading] = useState(true);
-
-  const handleLogout = () => {
-    window.location.href = "http://localhost:8080/logout";
-  };
-
-  useEffect(() => {
-    fetch("http://localhost:8080/api/gmail/messages", {
-      credentials: "include",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Could not load Gmail messages");
-        }
-
-        return response.json();
-      })
-      .then((data) => {
-        setMessages(data.messages);
-        console.log(data.errors);
-      })
-      .catch((error) => console.error(error))
-      .finally(() => setMessagesLoading(false));
-  }, []);
-
-  if (!user) {
-    return (
-      <main className="page">
-        <section className="card">
-          <p>Loading your account...</p>
-        </section>
-      </main>
-    );
-  }
-
-  return (
-    <main className="page">
-      <section className="card">
-        {user.pictureUrl ? (
-          <img
-            src={user.pictureUrl}
-            alt={`${user.name}'s profile`}
-            className="avatar"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="avatar avatar-placeholder">
-            {user.name.charAt(0).toUpperCase()}
-          </div>
-        )}
-
-        <h1>Welcome, {user.name}</h1>
-        <p>You are logged into AllMail.</p>
-        <p>{user.email}</p>
-
-        <button onClick={handleLogout}>Logout</button>
-      </section>
-      <section className="messages-card">
-        <h2>Inbox</h2>
-
-        {messagesLoading ? (
-          <p>Loading messages...</p>
-        ) : messages.length === 0 ? (
-          <p>No messages found.</p>
-        ) : (
-          <ul className="message-list">
-            {messages.map((message) => (
-              <li
-                key={message.id}
-                className={message.unread ? "message unread" : "message"}
-              >
-                <div>
-                  <strong>{message.from}</strong>
-                  <p>{message.subject || "(No subject)"}</p>
-                  <small>{message.accountEmail}</small>
-                  <span>{message.snippet}</span>
-                </div>
-
-                <small>{message.receivedAt}</small>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </main>
-  );
-}
-
-function useCurrentUser(): [
-  CurrentUser | null,
-  (user: CurrentUser | null) => void,
-] {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-
-  useEffect(() => {
-    fetch("http://localhost:8080/api/auth/me", {
-      credentials: "include",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("User is not authenticated");
-        }
-
-        return response.json();
-      })
-      .then((data) => setUser(data))
-      .catch(() => {
-        window.location.href = "/";
-      });
-  }, []);
-
-  return [user, setUser];
-}
+import DashboardPage from "./pages/app/DashboardPage";
+import InboxPage from "./pages/app/InboxPage";
+import AccountInboxPage from "./pages/app/AccountInboxPage";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/inbox" element={<InboxPage />} />
+      <Route path="/accounts/:accountId/inbox" element={<AccountInboxPage />} />
     </Routes>
   );
 }
