@@ -1,0 +1,33 @@
+.mailbox-message {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+}
+
+.mailbox-message:hover,
+.mailbox-message.selected {
+  background: #f0f4fe;
+}
+
+.mailbox-message.unread {
+  background: #f8faff;
+}
+
+.mailbox-message.unread.selected {
+  background: #f0f4fe;
+}
+
+.mailbox-message-main {
+  min-width: 0;
+}
+
+.mailbox-snippet {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.mailbox-date {
+  white-space: nowrap;
+}
