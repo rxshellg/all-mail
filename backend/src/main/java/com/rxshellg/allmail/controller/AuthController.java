@@ -1,37 +1,27 @@
 package com.rxshellg.allmail.controller;
 
-import com.rxshellg.allmail.config.SessionKeys;
 import com.rxshellg.allmail.model.AppUser;
-import com.rxshellg.allmail.repository.AppUserRepository;
+import com.rxshellg.allmail.service.CurrentUserService;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 /**
- * Provides authentication-related API endpoints for the React frontend.
+ * Provides authentication-related API endpoints for the React frontend
  */
 @RestController
+@RequiredArgsConstructor
 public class AuthController {
 
-    private final AppUserRepository appUserRepository;
-
-    public AuthController(AppUserRepository appUserRepository) {
-        this.appUserRepository = appUserRepository;
-    }
+    private final CurrentUserService currentUserService;
 
     @GetMapping("/api/auth/me")
     public Map<String, Object> getCurrentUser(HttpSession session) {
-
-        Long appUserId = (Long) session.getAttribute(SessionKeys.ALLMAIL_USER_ID);
-
-        if (appUserId == null) {
-            throw new RuntimeException("No AllMail user is stored in the current session.");
-        }
-
-        AppUser appUser = appUserRepository.findById(appUserId)
-                .orElseThrow(() -> new RuntimeException("Logged-in user was not found."));
+        AppUser appUser = currentUserService.requireCurrentUser(session);
 
         return Map.of(
                 "name", appUser.getName(),

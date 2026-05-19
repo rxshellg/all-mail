@@ -5,9 +5,10 @@ import com.rxshellg.allmail.dto.ConnectedAccountDto;
 import com.rxshellg.allmail.model.AppUser;
 import com.rxshellg.allmail.model.ConnectedAccount;
 import com.rxshellg.allmail.service.ConnectedAccountService;
-import com.rxshellg.allmail.repository.AppUserRepository;
+import com.rxshellg.allmail.service.CurrentUserService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -16,24 +17,17 @@ import java.util.List;
 /**
  * Exposes the email accounts connected to the current AllMail user.
  */
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/accounts")
 public class ConnectedAccountController {
 
-    private final AppUserRepository appUserRepository;
+    private final CurrentUserService currentUserService;
     private final ConnectedAccountService connectedAccountService;
-
-    public ConnectedAccountController(
-            AppUserRepository appUserRepository,
-            ConnectedAccountService connectedAccountService
-    ) {
-        this.appUserRepository = appUserRepository;
-        this.connectedAccountService = connectedAccountService;
-    }
 
     @GetMapping
     public List<ConnectedAccountDto> getConnectedAccounts(HttpSession session) {
-        return connectedAccountService.getActiveAccountsForUser(getCurrentAppUser(session))
+        return connectedAccountService.getActiveAccountsForUser(currentUserService.requireCurrentUser(session))
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -41,7 +35,7 @@ public class ConnectedAccountController {
 
     @GetMapping("/connect/google")
     public void connectGoogleAccount(HttpSession session, HttpServletResponse response) throws IOException {
-        session.setAttribute(SessionKeys.CONNECT_OWNER_USER_ID, requireAppUserId(session));
+        session.setAttribute(SessionKeys.CONNECT_OWNER_USER_ID, currentUserService.requireCurrentUserId(session));
         response.sendRedirect("/oauth2/authorization/google");
     }
 
@@ -51,7 +45,7 @@ public class ConnectedAccountController {
             HttpSession session,
             HttpServletResponse response
     ) throws IOException {
-        AppUser appUser = getCurrentAppUser(session);
+        AppUser appUser = currentUserService.requireCurrentUser(session);
 
         connectedAccountService.validateAccountBelongsToUser(appUser, accountId);
 
@@ -63,28 +57,10 @@ public class ConnectedAccountController {
 
     @DeleteMapping("/{accountId}")
     public void disconnectAccount(@PathVariable Long accountId, HttpSession session) {
-        connectedAccountService.disconnectAccount(getCurrentAppUser(session), accountId);
-    }
-
-    // --- Helpers ---
-
-    private Long requireAppUserId(HttpSession session) {
-        Long appUserId = (Long) session.getAttribute(SessionKeys.ALLMAIL_USER_ID);
-        if (appUserId == null) throw new RuntimeException("No AllMail user is stored in the current session.");
-        return appUserId;
-    }
-
-    private AppUser getCurrentAppUser(HttpSession session) {
-        return appUserRepository.findById(requireAppUserId(session))
-                .orElseThrow(() -> new RuntimeException("Logged-in user was not found."));
+        connectedAccountService.disconnectAccount(currentUserService.requireCurrentUser(session), accountId);
     }
 
     private ConnectedAccountDto toDto(ConnectedAccount account) {
-        boolean needsReconnect =
-            account.isNeedsReconnect()
-                || account.getRefreshToken() == null 
-                || account.getRefreshToken().isBlank();
-
         return new ConnectedAccountDto(
                 account.getId(),
                 account.getProvider(),
@@ -92,7 +68,7 @@ public class ConnectedAccountController {
                 account.getDisplayName(),
                 account.getPictureUrl(),
                 account.isActive(),
-                needsReconnect
+                account.isNeedsReconnect() || account.getRefreshToken() == null || account.getRefreshToken().isBlank()
         );
     }
 }
