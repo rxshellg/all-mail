@@ -4,20 +4,20 @@ import com.rxshellg.allmail.config.SessionKeys;
 import com.rxshellg.allmail.dto.ConnectedAccountDto;
 import com.rxshellg.allmail.model.AppUser;
 import com.rxshellg.allmail.model.ConnectedAccount;
-import com.rxshellg.allmail.repository.AppUserRepository;
 import com.rxshellg.allmail.service.ConnectedAccountService;
+import com.rxshellg.allmail.repository.AppUserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
 
 /**
- * Exposes the email accounts connected to the current AllMail user
+ * Exposes the email accounts connected to the current AllMail user.
  */
 @RestController
+@RequestMapping("/api/accounts")
 public class ConnectedAccountController {
 
     private final AppUserRepository appUserRepository;
@@ -31,48 +31,68 @@ public class ConnectedAccountController {
         this.connectedAccountService = connectedAccountService;
     }
 
-    @GetMapping("/api/accounts")
+    @GetMapping
     public List<ConnectedAccountDto> getConnectedAccounts(HttpSession session) {
-        AppUser appUser = getCurrentAppUser(session);
-
-        return connectedAccountService.getActiveAccountsForUser(appUser)
+        return connectedAccountService.getActiveAccountsForUser(getCurrentAppUser(session))
                 .stream()
                 .map(this::toDto)
                 .toList();
     }
 
-    @GetMapping("/api/accounts/connect/google")
+    @GetMapping("/connect/google")
     public void connectGoogleAccount(HttpSession session, HttpServletResponse response) throws IOException {
-        Long appUserId = (Long) session.getAttribute(SessionKeys.ALLMAIL_USER_ID);
+        session.setAttribute(SessionKeys.CONNECT_OWNER_USER_ID, requireAppUserId(session));
+        response.sendRedirect("/oauth2/authorization/google");
+    }
 
-        if (appUserId == null) {
-            throw new RuntimeException("You must be logged in before connecting another Google account.");
-        }
+    @GetMapping("/{accountId}/reconnect/google")
+    public void reconnectGoogleAccount(
+            @PathVariable Long accountId,
+            HttpSession session,
+            HttpServletResponse response
+    ) throws IOException {
+        AppUser appUser = getCurrentAppUser(session);
 
-        session.setAttribute(SessionKeys.CONNECT_OWNER_USER_ID, appUserId);
+        connectedAccountService.validateAccountBelongsToUser(appUser, accountId);
+
+        session.setAttribute(SessionKeys.CONNECT_OWNER_USER_ID, appUser.getId());
+        session.setAttribute(SessionKeys.RECONNECT_ACCOUNT_ID, accountId);
 
         response.sendRedirect("/oauth2/authorization/google");
     }
 
-    private AppUser getCurrentAppUser(HttpSession session) {
+    @DeleteMapping("/{accountId}")
+    public void disconnectAccount(@PathVariable Long accountId, HttpSession session) {
+        connectedAccountService.disconnectAccount(getCurrentAppUser(session), accountId);
+    }
+
+    // --- Helpers ---
+
+    private Long requireAppUserId(HttpSession session) {
         Long appUserId = (Long) session.getAttribute(SessionKeys.ALLMAIL_USER_ID);
+        if (appUserId == null) throw new RuntimeException("No AllMail user is stored in the current session.");
+        return appUserId;
+    }
 
-        if (appUserId == null) {
-            throw new RuntimeException("No AllMail user is stored in the current session.");
-        }
-
-        return appUserRepository.findById(appUserId)
+    private AppUser getCurrentAppUser(HttpSession session) {
+        return appUserRepository.findById(requireAppUserId(session))
                 .orElseThrow(() -> new RuntimeException("Logged-in user was not found."));
     }
 
     private ConnectedAccountDto toDto(ConnectedAccount account) {
+        boolean needsReconnect =
+            account.isNeedsReconnect()
+                || account.getRefreshToken() == null 
+                || account.getRefreshToken().isBlank();
+
         return new ConnectedAccountDto(
                 account.getId(),
                 account.getProvider(),
                 account.getEmailAddress(),
                 account.getDisplayName(),
                 account.getPictureUrl(),
-                account.isActive()
+                account.isActive(),
+                needsReconnect
         );
     }
 }

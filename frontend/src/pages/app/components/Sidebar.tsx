@@ -1,9 +1,12 @@
+import { useState, type CSSProperties } from "react";
 import { NavLink } from "react-router-dom";
 import type { ConnectedAccount } from "../types";
+import AccountsModal from "./AccountsModal";
 import "./Sidebar.css";
 
 type SidebarProps = {
   accounts: ConnectedAccount[];
+  refreshAccounts: () => Promise<void>;
 };
 
 const ACCOUNT_COLORS = [
@@ -13,78 +16,88 @@ const ACCOUNT_COLORS = [
   { bg: "#FFE8EC", color: "#E85D75" },
 ];
 
-type NavItemProps = {
+function navClass(...extra: string[]) {
+  return ({ isActive }: { isActive: boolean }) =>
+    ["nav-link sidebar-link", ...extra, isActive && "active"]
+      .filter(Boolean)
+      .join(" ");
+}
+
+function NavItem({
+  to,
+  icon,
+  label,
+}: {
   to: string;
   icon: string;
   label: string;
-  extraClass?: string;
-};
-
-function NavItem({ to, icon, label, extraClass = "" }: NavItemProps) {
+}) {
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `nav-link sidebar-link ${extraClass} ${isActive ? "active" : ""}`.trim()
-      }
-    >
-      <i className={`bi ${icon} sidebar-icon`}></i>
+    <NavLink to={to} className={navClass()}>
+      <i className={`bi ${icon} sidebar-icon`} />
       <span className="sidebar-text">{label}</span>
     </NavLink>
   );
 }
 
-export default function Sidebar({ accounts }: SidebarProps) {
+function AccountNavItem({
+  id,
+  emailAddress,
+  index,
+}: ConnectedAccount & { index: number }) {
+  const { bg, color } = ACCOUNT_COLORS[index % ACCOUNT_COLORS.length];
+
   return (
-    <aside className="sidebar sidebar-narrow-unfoldable shadow-sm bg-white">
-      <nav className="nav flex-column h-100 p-3">
-        <NavItem to="/dashboard" icon="bi-grid" label="Dashboard" />
-        <NavItem to="/inbox" icon="bi-inboxes" label="All Inboxes" />
+    <NavLink to={`/accounts/${id}/inbox`} className={navClass()}>
+      <span
+        className="sidebar-account-icon"
+        style={
+          { "--account-bg": bg, "--account-color": color } as CSSProperties
+        }
+      >
+        <i className="bi bi-envelope" />
+      </span>
+      <span className="sidebar-text">{emailAddress}</span>
+    </NavLink>
+  );
+}
 
-        <p className="sidebar-title fw-semibold text-uppercase small mt-4 mb-2">
-          Accounts
-        </p>
+export default function Sidebar({ accounts, refreshAccounts }: SidebarProps) {
+  const [modalOpen, setModalOpen] = useState(false);
 
-        {accounts.map(({ id, emailAddress }, index) => {
-          const { bg, color } = ACCOUNT_COLORS[index % ACCOUNT_COLORS.length];
+  return (
+    <>
+      <aside className="sidebar sidebar-narrow-unfoldable shadow-sm bg-white">
+        <nav className="nav flex-column h-100 p-3">
+          <NavItem to="/dashboard" icon="bi-grid" label="Dashboard" />
+          <NavItem to="/inbox" icon="bi-inboxes" label="All Inboxes" />
 
-          return (
-            <NavLink
-              key={id}
-              to={`/accounts/${id}/inbox`}
-              className={({ isActive }) =>
-                `nav-link sidebar-link ${isActive ? "active" : ""}`.trim()
-              }
-            >
-              <span
-                className="sidebar-account-icon"
-                style={
-                  {
-                    "--account-bg": bg,
-                    "--account-color": color,
-                  } as React.CSSProperties
-                }
-              >
-                <i className="bi bi-envelope"></i>
-              </span>
+          <p className="sidebar-title fw-semibold text-uppercase small mt-4 mb-2">
+            Accounts
+          </p>
 
-              <span className="sidebar-text">{emailAddress}</span>
-            </NavLink>
-          );
-        })}
+          {accounts.map((account, index) => (
+            <AccountNavItem key={account.id} {...account} index={index} />
+          ))}
 
-        <button
-          className="nav-link sidebar-link mt-2"
-          type="button"
-          onClick={() => {
-            window.location.href =
-              "http://localhost:8080/api/accounts/connect/google";
-          }}
-        >
-          <i className="bi bi-plus-circle sidebar-icon"></i>
-          <span className="sidebar-text">Add account</span>
-        </button>
-      </nav>
-    </aside>
+          <button
+            className="nav-link sidebar-link mt-2"
+            type="button"
+            onClick={() => setModalOpen(true)}
+          >
+            <i className="bi bi-pencil-square sidebar-icon" />
+            <span className="sidebar-text">Manage accounts</span>
+          </button>
+        </nav>
+      </aside>
+
+      {modalOpen && (
+        <AccountsModal
+          accounts={accounts}
+          onClose={() => setModalOpen(false)}
+          refreshAccounts={refreshAccounts}
+        />
+      )}
+    </>
   );
 }

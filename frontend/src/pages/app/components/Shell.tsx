@@ -14,6 +14,11 @@ export default function Shell({ children }: ShellProps) {
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  const refreshAccounts = (): Promise<void> =>
+    apiGet<ConnectedAccount[]>("/api/accounts")
+      .then(setAccounts)
+      .catch(console.error);
+
   useEffect(() => {
     apiGet<CurrentUser>("/api/auth/me")
       .then(setUser)
@@ -22,9 +27,7 @@ export default function Shell({ children }: ShellProps) {
       })
       .finally(() => setLoadingUser(false));
 
-    apiGet<ConnectedAccount[]>("/api/accounts")
-      .then(setAccounts)
-      .catch((error) => console.error(error));
+    refreshAccounts();
   }, []);
 
   if (loadingUser || !user) {
@@ -39,7 +42,7 @@ export default function Shell({ children }: ShellProps) {
     <main className="workspace">
       <Navbar user={user} />
       <div className="workspace-body">
-        <Sidebar accounts={accounts} />
+        <Sidebar accounts={accounts} refreshAccounts={refreshAccounts}/>
         <section className="workspace-content">{children}</section>
       </div>
     </main>

@@ -1,0 +1,20 @@
+.accounts-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 2000;
+  background: rgba(15, 22, 51, 0.35);
+}
+
+.accounts-modal {
+  width: min(560px, calc(100vw - 2rem));
+  padding: 1.5rem;
+}
+
+.accounts-modal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}

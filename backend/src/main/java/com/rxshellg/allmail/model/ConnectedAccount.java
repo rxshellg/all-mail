@@ -1,11 +1,19 @@
 package com.rxshellg.allmail.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import java.time.LocalDateTime;
 
 /**
  * Represents a Gmail mailbox connected to a user
  */
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(exclude = {"accessToken", "refreshToken", "scopes"})
 @Entity
 @Table(
         name = "connected_accounts",
@@ -51,13 +59,14 @@ public class ConnectedAccount {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(nullable = false)
+    private boolean needsReconnect = false;
+
     @Column(nullable = false, updatable = false)
+    @Setter(lombok.AccessLevel.NONE)
     private LocalDateTime connectedAt;
 
     private LocalDateTime lastSyncedAt;
-
-    public ConnectedAccount() {
-    }
 
     public ConnectedAccount(AppUser appUser, String provider, String providerAccountId,
                                  String emailAddress, String displayName, String pictureUrl) {
@@ -72,126 +81,6 @@ public class ConnectedAccount {
 
     @PrePersist
     protected void onCreate() {
-        if (connectedAt == null) {
-            connectedAt = LocalDateTime.now();
-        }
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public AppUser getAppUser() {
-        return appUser;
-    }
-
-    public void setAppUser(AppUser appUser) {
-        this.appUser = appUser;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getProviderAccountId() {
-        return providerAccountId;
-    }
-
-    public void setProviderAccountId(String providerAccountId) {
-        this.providerAccountId = providerAccountId;
-    }
-
-    public String getEmailAddress() {
-        return emailAddress;
-    }
-
-    public void setEmailAddress(String emailAddress) {
-        this.emailAddress = emailAddress;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public String getPictureUrl() {
-        return pictureUrl;
-    }
-
-    public void setPictureUrl(String pictureUrl) {
-        this.pictureUrl = pictureUrl;
-    }
-
-    public String getAccessToken() {
-        return accessToken;
-    }
-
-    public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
-    }
-
-    public String getRefreshToken() {
-        return refreshToken;
-    }
-
-    public void setRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
-    }
-
-    public LocalDateTime getAccessTokenExpiry() {
-        return accessTokenExpiry;
-    }
-
-    public void setAccessTokenExpiry(LocalDateTime accessTokenExpiry) {
-        this.accessTokenExpiry = accessTokenExpiry;
-    }
-
-    public String getScopes() {
-        return scopes;
-    }
-
-    public void setScopes(String scopes) {
-        this.scopes = scopes;
-    }
-
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    public LocalDateTime getConnectedAt() {
-        return connectedAt;
-    }
-
-    public LocalDateTime getLastSyncedAt() {
-        return lastSyncedAt;
-    }
-
-    public void setLastSyncedAt(LocalDateTime lastSyncedAt) {
-        this.lastSyncedAt = lastSyncedAt;
-    }
-
-    @Override
-    public String toString() {
-        return "ConnectedAccount{" +
-                "id=" + id +
-                ", provider='" + provider + '\'' +
-                ", providerAccountId='" + providerAccountId + '\'' +
-                ", emailAddress='" + emailAddress + '\'' +
-                ", displayName='" + displayName + '\'' +
-                ", active=" + active +
-                ", connectedAt=" + connectedAt +
-                ", lastSyncedAt=" + lastSyncedAt +
-                '}';
+        if (connectedAt == null) connectedAt = LocalDateTime.now();
     }
 }
