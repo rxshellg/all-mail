@@ -12,9 +12,11 @@ export default function LoginPage() {
           <div className="row g-0">
             <section className="col-lg-6 login-intro p-4 p-lg-5">
               <a className="text-decoration-none" href="/">
-                <span className="login-logo-mark">A</span>
+                <span className="login-back-icon">
+                  <i className="bi bi-arrow-left"></i>
+                </span>
               </a>
-              <img src="LoginIllustration.png" />
+              <img src="Login-Illustration.png" />
             </section>
 
             <section className="col-lg-6 bg-white p-4 p-lg-5 d-flex align-items-center">
