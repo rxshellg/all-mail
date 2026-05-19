@@ -3,6 +3,7 @@ package com.rxshellg.allmail.service;
 import com.rxshellg.allmail.model.AppUser;
 import com.rxshellg.allmail.model.ConnectedAccount;
 import com.rxshellg.allmail.repository.ConnectedAccountRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,13 +11,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@Transactional
+@RequiredArgsConstructor
 public class ConnectedAccountService {
 
     private final ConnectedAccountRepository connectedAccountRepository;
-
-    public ConnectedAccountService(ConnectedAccountRepository connectedAccountRepository) {
-        this.connectedAccountRepository = connectedAccountRepository;
-    }
 
     public ConnectedAccount createOrUpdateGoogleAccount(
             AppUser appUser,
@@ -33,9 +32,8 @@ public class ConnectedAccountService {
                 .findByAppUserAndProviderAndProviderAccountId(appUser, "GOOGLE", googleId)
                 .orElseGet(() -> new ConnectedAccount(appUser, "GOOGLE", googleId, email, name, pictureUrl));
 
-        applyGoogleTokenFields(account, email, name, pictureUrl, accessToken, refreshToken, accessTokenExpiry, scopes);
-
-        return connectedAccountRepository.save(account);
+        return connectedAccountRepository.save(
+                applyGoogleTokenFields(account, email, name, pictureUrl, accessToken, refreshToken, accessTokenExpiry, scopes));
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +41,6 @@ public class ConnectedAccountService {
         return connectedAccountRepository.findByAppUserAndActiveTrue(appUser);
     }
 
-    @Transactional
     public ConnectedAccount save(ConnectedAccount account) {
         return connectedAccountRepository.save(account);
     }
@@ -51,7 +48,6 @@ public class ConnectedAccountService {
     public void disconnectAccount(AppUser appUser, Long accountId) {
         ConnectedAccount account = findAndVerifyOwnership(appUser, accountId);
         account.setActive(false);
-        connectedAccountRepository.save(account);
     }
 
     public void validateAccountBelongsToUser(AppUser appUser, Long accountId) {
@@ -80,9 +76,8 @@ public class ConnectedAccountService {
             throw new RuntimeException("Selected Google account does not match the account being reconnected.");
         }
 
-        applyGoogleTokenFields(account, email, name, pictureUrl, accessToken, refreshToken, accessTokenExpiry, scopes);
-
-        return connectedAccountRepository.save(account);
+        return connectedAccountRepository.save(
+                applyGoogleTokenFields(account, email, name, pictureUrl, accessToken, refreshToken, accessTokenExpiry, scopes));
     }
 
     // --- Private helpers ---
@@ -98,9 +93,15 @@ public class ConnectedAccountService {
         return account;
     }
 
-    private void applyGoogleTokenFields(
-            ConnectedAccount account, String email, String name, String pictureUrl,
-            String accessToken, String refreshToken, LocalDateTime accessTokenExpiry, String scopes
+    private ConnectedAccount applyGoogleTokenFields(
+        ConnectedAccount account,
+        String email,
+        String name,
+        String pictureUrl,
+        String accessToken,
+        String refreshToken,
+        LocalDateTime accessTokenExpiry,
+        String scopes
     ) {
         account.setEmailAddress(email);
         account.setDisplayName(name);
@@ -114,5 +115,6 @@ public class ConnectedAccountService {
             account.setRefreshToken(refreshToken);
             account.setNeedsReconnect(false);
         }
+        return account;
     }
 }

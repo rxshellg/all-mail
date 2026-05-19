@@ -26,7 +26,7 @@ public class AuthController {
         return Map.of(
                 "name", appUser.getName(),
                 "email", appUser.getEmail(),
-                "pictureUrl", appUser.getPictureUrl()
+                "pictureUrl", appUser.getPictureUrl() == null ? "" : appUser.getPictureUrl()
         );
     }
 

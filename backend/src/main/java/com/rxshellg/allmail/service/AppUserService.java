@@ -26,16 +26,15 @@ public class AppUserService {
         String pictureUrl = oauthUser.getAttribute("picture");
 
         return appUserRepository.findByGoogleId(googleId)
-                .map(existingUser -> {
-                    existingUser.setEmail(email);
-                    existingUser.setName(name);
-                    existingUser.setPictureUrl(pictureUrl);
-                    existingUser.setLastLoginAt(LocalDateTime.now());
-                    return appUserRepository.save(existingUser);
+                .map(user -> {
+                    user.setEmail(email);
+                    user.setName(name);
+                    user.setPictureUrl(pictureUrl);
+                    user.setLastLoginAt(LocalDateTime.now());
+                    return appUserRepository.save(user);
                 })
-                .orElseGet(() -> {
-                    AppUser newUser = new AppUser(googleId, email, name, pictureUrl);
-                    return appUserRepository.save(newUser);
-                });
+                .orElseGet(() -> appUserRepository.save(new AppUser(
+                    googleId, email, name, pictureUrl
+                )));
     }
 }
