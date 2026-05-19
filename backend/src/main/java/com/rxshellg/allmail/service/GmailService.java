@@ -21,12 +21,17 @@ import java.util.Map;
 @Service
 public class GmailService {
 
+    private final ConnectedAccountService connectedAccountService;
     private static final Logger logger = LoggerFactory.getLogger(GmailService.class);
     private final RestClient restClient;
     private final GoogleTokenService googleTokenService;
 
-    public GmailService(GoogleTokenService googleTokenService) {
+    public GmailService(
+        GoogleTokenService googleTokenService,
+        ConnectedAccountService connectedAccountService
+    ) {
         this.googleTokenService = googleTokenService;
+        this.connectedAccountService = connectedAccountService;
         this.restClient = RestClient.builder()
                 .baseUrl("https://gmail.googleapis.com/gmail/v1")
                 .build();
@@ -45,15 +50,24 @@ public class GmailService {
             }
 
             try {
-                allMessages.addAll(getInboxMessagesForAccount(account));
-            } catch (Exception ex) {
-                logger.warn(
-                        "Could not load Gmail messages for connected account {}",
-                        account.getEmailAddress(),
-                        ex
-                );
+                AccountMessages result = getInboxMessagesForAccount(account);
+                account = result.account();
 
-                errors.add(buildAccountError(account, ex));
+                if (account.isNeedsReconnect()) {
+                    account.setNeedsReconnect(false);
+                    connectedAccountService.save(account);
+                }
+
+                allMessages.addAll(result.messages());
+            } catch (Exception ex) {
+                GmailAccountErrorDto accountError = buildAccountError(account, ex);
+
+                if (accountError.isReconnectRequired()) {
+                    account.setNeedsReconnect(true);
+                    connectedAccountService.save(account);
+                }
+
+                errors.add(accountError);
             }
         }
 
@@ -63,7 +77,9 @@ public class GmailService {
     /**
      * Gets a small list of message IDs for one Gmail account, then loads metadata for each.
      */
-    private List<GmailMessageDto> getInboxMessagesForAccount(ConnectedAccount account) {
+    private record AccountMessages(ConnectedAccount account, List<GmailMessageDto> messages) {}
+
+    private AccountMessages getInboxMessagesForAccount(ConnectedAccount account) {
         account = googleTokenService.getAccountWithValidAccessToken(account);
         
         Map<String, Object> listResponse = restClient.get()
@@ -89,7 +105,7 @@ public class GmailService {
             accountMessages.add(getMessageDetails(messageId, account));
         }
 
-        return accountMessages;
+        return new AccountMessages(account, accountMessages);
     }
 
     /**

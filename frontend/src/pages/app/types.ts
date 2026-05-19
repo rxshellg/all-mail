@@ -11,6 +11,7 @@ export type ConnectedAccount = {
   displayName: string;
   pictureUrl: string;
   active: boolean;
+  needsReconnect: boolean;
 };
 
 export type GmailMessage = {
