@@ -10,8 +10,6 @@ import org.springframework.web.client.RestClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Map;
 
 /**
@@ -40,13 +38,11 @@ public class GoogleTokenService {
      * Returns the account with a usable access token, refreshing it first if needed.
      */
     public ConnectedAccount getAccountWithValidAccessToken(ConnectedAccount account) {
-        if (!shouldRefresh(account)) {
-            return account;
-        }
-
-        if (account.getRefreshToken() == null || account.getRefreshToken().isBlank()) {
+        if (!shouldRefresh(account)) return account;
+        
+        String refreshToken = account.getRefreshToken();
+        if (refreshToken == null || refreshToken.isBlank())
             throw new RuntimeException("No refresh token available for " + account.getEmailAddress());
-        }
 
         Map<String, Object> tokenResponse = restClient.post()
                 .uri("/token")
@@ -59,16 +55,8 @@ public class GoogleTokenService {
                 .body(new ParameterizedTypeReference<>() {
                 });
 
-        String newAccessToken = (String) tokenResponse.get("access_token");
-        Integer expiresInSeconds = (Integer) tokenResponse.get("expires_in");
-
-        LocalDateTime newExpiry = OffsetDateTime.now()
-                .plusSeconds(expiresInSeconds)
-                .atZoneSameInstant(ZoneId.systemDefault())
-                .toLocalDateTime();
-
-        account.setAccessToken(newAccessToken);
-        account.setAccessTokenExpiry(newExpiry);
+        account.setAccessToken((String) tokenResponse.get("access_token"));
+        account.setAccessTokenExpiry(LocalDateTime.now().plusSeconds((Integer) tokenResponse.get("expires_in")));
 
         return connectedAccountService.save(account);
     }
@@ -77,15 +65,11 @@ public class GoogleTokenService {
      * Refreshes early so Gmail calls do not start with a nearly expired token.
      */
     private boolean shouldRefresh(ConnectedAccount account) {
-        if (account.getAccessToken() == null || account.getAccessToken().isBlank()) {
-            return true;
-        }
-
-        if (account.getAccessTokenExpiry() == null) {
-            return true;
-        }
-
-        return account.getAccessTokenExpiry().isBefore(LocalDateTime.now().plusMinutes(2));
+        String token = account.getAccessToken();
+        LocalDateTime expiry = account.getAccessTokenExpiry();
+        return token == null || token.isBlank()
+                || expiry == null
+                || expiry.isBefore(LocalDateTime.now().plusMinutes(2));
     }
 
     private String encode(String value) {

@@ -4,8 +4,6 @@ import com.rxshellg.allmail.dto.GmailAccountErrorDto;
 import com.rxshellg.allmail.dto.GmailInboxResponseDto;
 import com.rxshellg.allmail.dto.GmailMessageDto;
 import com.rxshellg.allmail.model.ConnectedAccount;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -22,7 +20,6 @@ import java.util.Map;
 public class GmailService {
 
     private final ConnectedAccountService connectedAccountService;
-    private static final Logger logger = LoggerFactory.getLogger(GmailService.class);
     private final RestClient restClient;
     private final GoogleTokenService googleTokenService;
 
@@ -45,9 +42,7 @@ public class GmailService {
         List<GmailAccountErrorDto> errors = new ArrayList<>();
 
         for (ConnectedAccount account : connectedAccounts) {
-            if (!"GOOGLE".equalsIgnoreCase(account.getProvider())) {
-                continue;
-            }
+            if (!"GOOGLE".equalsIgnoreCase(account.getProvider())) continue;
 
             try {
                 AccountMessages result = getInboxMessagesForAccount(account);
@@ -60,14 +55,14 @@ public class GmailService {
 
                 allMessages.addAll(result.messages());
             } catch (Exception ex) {
-                GmailAccountErrorDto accountError = buildAccountError(account, ex);
+                GmailAccountErrorDto error = buildAccountError(account, ex);
 
-                if (accountError.isReconnectRequired()) {
+                if (error.isReconnectRequired()) {
                     account.setNeedsReconnect(true);
                     connectedAccountService.save(account);
                 }
 
-                errors.add(accountError);
+                errors.add(error);
             }
         }
 
@@ -93,10 +88,9 @@ public class GmailService {
                 .body(new ParameterizedTypeReference<>() {
                 });
 
-        List<Map<String, Object>> messages =
-                listResponse == null
-                        ? List.of()
-                        : (List<Map<String, Object>>) listResponse.getOrDefault("messages", List.of());
+        List<Map<String, Object>> messages =              listResponse == null
+                ? List.of()
+                : (List<Map<String, Object>>) listResponse.getOrDefault("messages", List.of());
 
         List<GmailMessageDto> accountMessages = new ArrayList<>();
 
@@ -112,7 +106,7 @@ public class GmailService {
      * Loads the sender, subject, date, snippet, and unread status for one Gmail message
      */
     private GmailMessageDto getMessageDetails(String messageId, ConnectedAccount account) {
-        Map<String, Object> messageDetails = restClient.get()
+        Map<String, Object> msg = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/users/me/messages/{messageId}")
                         .queryParam("format", "metadata")
@@ -122,29 +116,21 @@ public class GmailService {
                         .build(messageId))
                 .header("Authorization", "Bearer " + account.getAccessToken())
                 .retrieve()
-                .body(new ParameterizedTypeReference<>() {
-                });
+                .body(new ParameterizedTypeReference<>() {});
 
-        String threadId = (String) messageDetails.get("threadId");
-        String snippet = (String) messageDetails.getOrDefault("snippet", "");
-        String from = getHeaderValue(messageDetails, "From");
-        String subject = getHeaderValue(messageDetails, "Subject");
-        String receivedAt = getHeaderValue(messageDetails, "Date");
-
-        List<String> labelIds = (List<String>) messageDetails.getOrDefault("labelIds", List.of());
-        boolean unread = labelIds.contains("UNREAD");
+        List<String> labelIds = (List<String>) msg.getOrDefault("labelIds", List.of());
 
         return new GmailMessageDto(
-                messageId,
-                threadId,
+                (String) msg.get("id"),
+                (String) msg.get("threadId"),
                 account.getId(),
                 account.getEmailAddress(),
                 account.getDisplayName(),
-                from,
-                subject,
-                snippet,
-                receivedAt,
-                unread
+                getHeaderValue(msg, "From"),
+                getHeaderValue(msg, "Subject"),
+                (String) msg.getOrDefault("snippet", ""),
+                getHeaderValue(msg, "Date"),
+                labelIds.contains("UNREAD")
         );
     }
 
@@ -156,7 +142,7 @@ public class GmailService {
 
         String message = reconnectRequired
                 ? "This account needs to be reconnected."
-                : "Messages could not be loaded for this account.";
+                : "Messages could not be loaded for this account";
 
         return new GmailAccountErrorDto(
                 account.getId(),
@@ -171,13 +157,11 @@ public class GmailService {
      * Detects failures that usually mean Google access was revoked or cannot be refreshed
      */
     private boolean isReconnectRequired(Exception ex) {
-        if (ex.getMessage() != null && ex.getMessage().contains("No refresh token available")) {
-            return true;
-        }
+        if (ex.getMessage() != null && ex.getMessage().contains("No refresh token available")) return true;
 
         if (ex instanceof RestClientResponseException responseException) {
-            int statusCode = responseException.getStatusCode().value();
-            return statusCode == 400 || statusCode == 401 || statusCode == 403;
+            int status = responseException.getStatusCode().value();
+            return status == 400 || status == 401 || status == 403;
         }
 
         return false;
