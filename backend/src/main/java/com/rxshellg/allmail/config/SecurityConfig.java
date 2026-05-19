@@ -92,29 +92,33 @@ public class SecurityConfig {
      * login flow
      */
     private void handleOAuthSuccess(
-            HttpServletRequest request,
-            jakarta.servlet.http.HttpServletResponse response,
-            Authentication authentication
+        HttpServletRequest request,
+        jakarta.servlet.http.HttpServletResponse response,
+        Authentication authentication
     ) throws java.io.IOException {
         OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
         HttpSession session = request.getSession();
+ 
         Long connectOwnerUserId = (Long) session.getAttribute(SessionKeys.CONNECT_OWNER_USER_ID);
- 
-        if (connectOwnerUserId != null) {
-            AppUser owner = appUserRepository.findById(connectOwnerUserId)
-                    .orElseThrow(() -> new RuntimeException("Original AllMail user was not found."));
-            Long reconnectAccountId = (Long) session.getAttribute(SessionKeys.RECONNECT_ACCOUNT_ID);
-            persistGoogleAccount(owner, reconnectAccountId, oauthUser, authentication);
-            session.removeAttribute(SessionKeys.RECONNECT_ACCOUNT_ID);
-            session.setAttribute(SessionKeys.ALLMAIL_USER_ID, owner.getId());
+        Long reconnectAccountId = (Long) session.getAttribute(SessionKeys.RECONNECT_ACCOUNT_ID);
+
+        try {
+            if (connectOwnerUserId != null) {
+                AppUser owner = appUserRepository.findById(connectOwnerUserId)
+                        .orElseThrow(() -> new RuntimeException("Original AllMail user was not found."));
+                persistGoogleAccount(owner, reconnectAccountId, oauthUser, authentication);
+                session.setAttribute(SessionKeys.ALLMAIL_USER_ID, owner.getId());
+            } else {
+                AppUser appUser = appUserService.createOrUpdateUser(oauthUser);
+                session.setAttribute(SessionKeys.ALLMAIL_USER_ID, appUser.getId());
+                persistGoogleAccount(appUser, null, oauthUser, authentication);
+            }
+
+            response.sendRedirect(FRONTEND_URL + "/dashboard");
+        } finally {
             session.removeAttribute(SessionKeys.CONNECT_OWNER_USER_ID);
-        } else {
-            AppUser appUser = appUserService.createOrUpdateUser(oauthUser);
-            session.setAttribute(SessionKeys.ALLMAIL_USER_ID, appUser.getId());
-            persistGoogleAccount(appUser, null, oauthUser, authentication);
+            session.removeAttribute(SessionKeys.RECONNECT_ACCOUNT_ID);
         }
- 
-        response.sendRedirect(FRONTEND_URL + "/dashboard");
     }
  
     /**
